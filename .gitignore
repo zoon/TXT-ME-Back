@@ -16,3 +16,7 @@ function.zip
 # Node/Python зависимости (если появятся внутри папок)
 node_modules/
 __pycache__/
+
+# root hidden folders
+.[a-z]*/
+
