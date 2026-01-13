@@ -1,0 +1,10 @@
+{
+  "name": "txt-me-back",
+  "type": "module",
+  "scripts": {
+    "setup-db": "node scripts/create-tables.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.958.0"
+  }
+}
