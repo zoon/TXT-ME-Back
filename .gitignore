@@ -17,6 +17,16 @@ function.zip
 node_modules/
 __pycache__/
 
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate*
+
+# Local dev data
+dev-local/data/
+
 # root hidden folders
-.[a-z]*/
+/.[A-Z]*/
+
+# agents
+/[ACG]*.md
 
