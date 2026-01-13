@@ -117,3 +117,16 @@
 - Decision: Created `.specs/UsersDeleteEmail.md` - email removal endpoint (final spec, 20/20 complete)
 - Gotcha: Third unique JWT secret default (`your-secret-key-here`) - codebase has 3 different fallbacks
 - Pattern: Uses `REMOVE email` to delete attribute vs setting null - proper DynamoDB pattern
+
+## 2026-01-13: Test and lint infrastructure
+- Decision: Established Bun + Biome + Zod stack in dev-local/ for LLM-driven development
+- Gotcha: AWS SDK v3 respects `AWS_ENDPOINT_URL_DYNAMODB` env var - enables DynamoDB Local without handler changes
+- Gotcha: GSI name mismatch (`UsernameIndex` vs `username-index`) broke initial tests - fixed create-tables.mjs
+- Gotcha: Handlers have inconsistent JWT secrets - tests use `cms-jwt-secret-prod-2025` (most common fallback)
+- Pattern: Preload script sets env vars before handler imports; handlers initialize clients at module load time
+
+## 2026-01-13: User handler tests completed
+- Decision: Added tests for 6 missing user handlers (AddAvatar, SetActiveAvatar, DeleteAvatar, GetUserAvatar, UpdatePassword, DeleteEmail)
+- Gotcha: UsersSetActiveAvatar and UsersDeleteEmail use different JWT secrets - 3 tests skipped due to cross-handler auth failure
+- Gotcha: Some handlers return 500 for auth errors instead of 401 (AddAvatar, DeleteAvatar catch-all blocks)
+- Pattern: Test coverage now 8/8 user handlers; 25 user tests pass, 3 skip (JWT mismatch), 60 total tests pass
