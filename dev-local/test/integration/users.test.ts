@@ -389,10 +389,7 @@ describe("Users", () => {
       testAvatarId = body.avatar.avatarId;
     });
 
-    // NOTE: This test will fail due to JWT secret mismatch
-    // UsersSetActiveAvatar uses 'cms-jwt-secret-change-in-production'
-    // while other handlers use 'cms-jwt-secret-prod-2025'
-    test.skip("sets existing avatar as active (SKIPPED: JWT secret mismatch)", async () => {
+    test("sets existing avatar as active", async () => {
       const event = buildAuthEvent(userTestUser, {
         method: "PUT",
         pathParameters: {
@@ -422,8 +419,7 @@ describe("Users", () => {
       expect(response.statusCode).toBe(401);
     });
 
-    // NOTE: This test also fails due to JWT secret mismatch - auth fails before validation
-    test.skip("returns 400 for missing avatarId path param (SKIPPED: JWT secret mismatch)", async () => {
+    test("returns 400 for missing avatarId path param", async () => {
       const event = buildAuthEvent(userTestUser, {
         method: "PUT",
         pathParameters: {},
@@ -705,10 +701,7 @@ describe("Users", () => {
       );
     });
 
-    // NOTE: This test will fail due to JWT secret mismatch
-    // UsersDeleteEmail uses 'your-secret-key-here' as fallback
-    // while other handlers use 'cms-jwt-secret-prod-2025'
-    test.skip("removes email successfully (SKIPPED: JWT secret mismatch)", async () => {
+    test("removes email successfully", async () => {
       const event = buildAuthEvent(emailTestUser, {
         method: "DELETE",
       });
