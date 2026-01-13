@@ -1,0 +1,18 @@
+# Секреты и конфиги
+.env
+*.pem
+login_secret.txt
+update_secret.txt
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+
+# Архивы и логи
+*.zip
+*.log
+function.zip
+
+# Node/Python зависимости (если появятся внутри папок)
+node_modules/
+__pycache__/
