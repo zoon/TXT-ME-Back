@@ -2,9 +2,29 @@
   "name": "txt-me-back",
   "type": "module",
   "scripts": {
-    "setup-db": "node scripts/create-tables.mjs"
+    "setup-db": "node scripts/create-tables.mjs",
+    "test": "bun test --preload ./test/preload.ts",
+    "test:watch": "bun test --watch --preload ./test/preload.ts",
+    "test:auth": "bun test --preload ./test/preload.ts test/integration/auth.test.ts",
+    "test:posts": "bun test --preload ./test/preload.ts test/integration/posts.test.ts",
+    "test:comments": "bun test --preload ./test/preload.ts test/integration/comments.test.ts",
+    "test:users": "bun test --preload ./test/preload.ts test/integration/users.test.ts",
+    "lint": "biome check --config-path=.. ..",
+    "lint:fix": "biome check --config-path=.. .. --write",
+    "format": "biome format --config-path=.. .. --write",
+    "ci": "biome format --config-path=.. .. --write && biome check --config-path=.. .. && bun test --preload ./test/preload.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.958.0"
+    "@aws-sdk/client-dynamodb": "^3.968.0",
+    "@aws-sdk/lib-dynamodb": "^3.958.0",
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/bun": "^1.2.0",
+    "@types/jsonwebtoken": "^9.0.7"
   }
 }
