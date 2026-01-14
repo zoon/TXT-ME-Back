@@ -25,7 +25,7 @@ Uploads a new avatar image for the authenticated user. Automatically sets it as 
 | Setting | Value | Note |
 |---------|-------|------|
 | Region | `eu-north-1` | Hardcoded |
-| JWT Secret | `cms-jwt-secret-prod-2025` | Hardcoded (differs from AuthLogin) |
+| JWT Secret | `cms-jwt-secret-prod-2025` | Env var with fallback |
 
 ## Request
 
@@ -170,7 +170,7 @@ New avatars are **always set as active**:
 
 | Issue | Severity | Description |
 |-------|----------|-------------|
-| Hardcoded JWT secret | High | Different from AuthLogin - tokens may not work |
+| Hardcoded region | Low | Region hardcoded to `eu-north-1` |
 | No image validation | Medium | Only checks prefix, not actual image data |
 | No content-type validation | Low | Accepts any `data:image/*` mime type |
 

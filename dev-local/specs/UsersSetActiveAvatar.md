@@ -101,12 +101,11 @@ Checks if provided avatarId matches any avatar in user's collection.
 
 | Variable | Hardcoded | Description |
 |----------|-----------|-------------|
-| `JWT_SECRET` | `cms-jwt-secret-change-in-production` | JWT signing secret |
+| `JWT_SECRET` | `cms-jwt-secret-prod-2025` | JWT signing secret |
 
 ## Notes
 
 - **CommonJS module** (`.js`, uses `require`/`exports`)
-- Different JWT secret than other functions (`-change-in-production` vs `-prod-2025`)
 - Uses `userToken.userId` only (no `sub` fallback)
 - `updatedAt` stored as ISO string, not Unix timestamp (inconsistent with other functions)
 - Verbose logging: logs token length, user ID, headers

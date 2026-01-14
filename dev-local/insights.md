@@ -21,9 +21,9 @@
 ## 2026-01-13: User handler tests completed
 
 - Decision: Added tests for 6 missing user handlers (AddAvatar, SetActiveAvatar, DeleteAvatar, GetUserAvatar, UpdatePassword, DeleteEmail)
-- Gotcha: UsersSetActiveAvatar and UsersDeleteEmail use different JWT secrets - 3 tests skipped due to cross-handler auth failure
+- Gotcha: UsersSetActiveAvatar and UsersDeleteEmail previously used different JWT secrets - fixed, all tests now pass
 - Gotcha: Some handlers return 500 for auth errors instead of 401 (AddAvatar, DeleteAvatar catch-all blocks)
-- Pattern: Test coverage now 8/8 user handlers; 25 user tests pass, 3 skip (JWT mismatch), 60 total tests pass
+- Pattern: Test coverage now 8/8 user handlers; all 28 user tests pass, 63 total tests pass
 
 ## 2026-01-13: JWT secret centralization
 

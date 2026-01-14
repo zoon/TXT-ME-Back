@@ -82,14 +82,13 @@ Uses `REMOVE` to delete the email attribute entirely (not set to null).
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `JWT_SECRET` | `your-secret-key-here` | JWT signing secret |
+| `JWT_SECRET` | `cms-jwt-secret-prod-2025` | JWT signing secret |
 
 ## Notes
 
 - **CommonJS module** (`.js`, uses `require`/`exports`)
 - No CORS preflight handler
 - Minimal CORS headers (no `Access-Control-Allow-Headers/Methods`)
-- **Different JWT secret default** (`your-secret-key-here`) - third unique fallback in codebase
 - Properly catches JWT errors with specific 401 response (unlike most other user functions)
 - Uses `decoded.userId` only (no `sub` fallback)
 - Idempotent - succeeds even if email already absent

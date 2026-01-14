@@ -25,7 +25,7 @@ Authenticates a user and returns a JWT token.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `JWT_SECRET` | Yes | `cms-jwt-secret-change-in-production` | Secret for signing JWT tokens |
+| `JWT_SECRET` | Yes | `cms-jwt-secret-prod-2025` | Secret for signing JWT tokens |
 | `AWS_REGION` | Yes | (from Lambda) | AWS region for DynamoDB |
 
 ## Request
