@@ -1,20 +1,18 @@
 # Lambda Functions Specification
 
-20 AWS Lambda functions organized by domain. All deploy with `CMS-` prefix.
+23 AWS Lambda functions organized by domain. All deploy with `CMS-` prefix.
 
 ---
 
 ## Auth (3 functions)
 
 ### AuthRegister
-|------------|-------------------------------|
-| **Path**   | `auth/AuthRegister/index.mjs` |
-| **Method** | POST                          |
-| **Auth**   | None                          |
+`auth/AuthRegister/index.mjs` · **POST** · public
 
 Creates inactive user (requires admin approval).
 
 **Input:**
+
 ```json
 { "username": "string", "password": "string" }
 ```
@@ -24,14 +22,12 @@ Creates inactive user (requires admin approval).
 ---
 
 ### AuthLogin
-|------------|----------------------------|
-| **Path**   | `auth/AuthLogin/index.mjs` |
-| **Method** | POST                       |
-| **Auth**   | None                       |
+`auth/AuthLogin/index.mjs` · **POST** · public
 
 Returns JWT token (1h expiry). Rejects inactive users.
 
 **Input:**
+
 ```json
 { "username": "string", "password": "string" }
 ```
@@ -41,10 +37,7 @@ Returns JWT token (1h expiry). Rejects inactive users.
 ---
 
 ### AdminUsers
-|------------|-----------------------------|
-| **Path**   | `auth/AdminUsers/index.mjs` |
-| **Method** | GET, PUT                    |
-| **Auth**   | `x-user-id` header          |
+`auth/AdminUsers/index.mjs` · **GET, PUT** · `x-user-id` header
 
 - **GET**: List users by status. Query: `?status=pending|active`
 - **PUT**: Update user role/status. Path: `/{userId}`, Body: `{ status, role }`
@@ -56,14 +49,12 @@ Returns JWT token (1h expiry). Rejects inactive users.
 ## Posts (6 functions)
 
 ### PostCreate
-|------------|------------------------------|
-| **Path**   | `posts/PostCreate/index.mjs` |
-| **Method** | POST                         |
-| **Auth**   | Bearer JWT                   |
+`posts/PostCreate/index.mjs` · **POST** · JWT
 
 Creates post. Auto-fetches user's active avatar if `postAvatarId` not provided.
 
 **Input:**
+
 ```json
 { "title": "string", "content": "string", "tags": ["tagId"], "postAvatarId": "optional" }
 ```
@@ -73,14 +64,12 @@ Creates post. Auto-fetches user's active avatar if `postAvatarId` not provided.
 ---
 
 ### PostUpdate
-|------------|------------------------------|
-| **Path**   | `posts/PostUpdate/index.mjs` |
-| **Method** | PUT                          |
-| **Auth**   | Bearer JWT                   |
+`posts/PostUpdate/index.mjs` · **PUT** · JWT
 
 Updates post (owner only). Path: `/{postId}`
 
 **Input:**
+
 ```json
 { "title?": "string", "content?": "string", "tags?": ["tagId"], "postAvatarId?": "string" }
 ```
@@ -90,10 +79,7 @@ Updates post (owner only). Path: `/{postId}`
 ---
 
 ### PostDelete
-|------------|------------------------------|
-| **Path**   | `posts/PostDelete/index.mjs` |
-| **Method** | DELETE                       |
-| **Auth**   | Bearer JWT                   |
+`posts/PostDelete/index.mjs` · **DELETE** · JWT
 
 Deletes post and all associated comments (batch, max 25/batch). Path: `/{postId}`
 
@@ -102,10 +88,7 @@ Deletes post and all associated comments (batch, max 25/batch). Path: `/{postId}
 ---
 
 ### PostsList
-|------------|-----------------------------|
-| **Path**   | `posts/PostsList/index.mjs` |
-| **Method** | GET                         |
-| **Auth**   | None                        |
+`posts/PostsList/index.mjs` · **GET** · public
 
 Lists posts (newest first). Supports tag filtering and cursor pagination.
 
@@ -116,10 +99,7 @@ Lists posts (newest first). Supports tag filtering and cursor pagination.
 ---
 
 ### PostsGet
-|------------|----------------------------|
-| **Path**   | `posts/PostsGet/index.mjs` |
-| **Method** | GET                        |
-| **Auth**   | None                       |
+`posts/PostsGet/index.mjs` · **GET** · public
 
 Fetch single post. Path: `/{postId}`
 
@@ -128,10 +108,7 @@ Fetch single post. Path: `/{postId}`
 ---
 
 ### PostsRecent
-|------------|-------------------------------|
-| **Path**   | `posts/PostsRecent/index.mjs` |
-| **Method** | GET                           |
-| **Auth**   | None                          |
+`posts/PostsRecent/index.mjs` · **GET** · public
 
 Fetches posts and comments created since timestamp (for real-time updates).
 
@@ -144,14 +121,12 @@ Fetches posts and comments created since timestamp (for real-time updates).
 ## Comments (3 functions)
 
 ### CommentCreate
-|------------|------------------------------------|
-| **Path**   | `comments/CommentCreate/index.mjs` |
-| **Method** | POST                               |
-| **Auth**   | Bearer JWT                         |
+`comments/CommentCreate/index.mjs` · **POST** · JWT
 
 Creates comment. Supports nesting via `parentCommentId`. Increments post's `commentCount`.
 
 **Input:**
+
 ```json
 { "content": "string", "parentCommentId?": "string", "commentAvatarId?": "string" }
 ```
@@ -161,10 +136,7 @@ Creates comment. Supports nesting via `parentCommentId`. Increments post's `comm
 ---
 
 ### CommentDelete
-|------------|------------------------------------|
-| **Path**   | `comments/CommentDelete/index.mjs` |
-| **Method** | DELETE                             |
-| **Auth**   | Bearer JWT                         |
+`comments/CommentDelete/index.mjs` · **DELETE** · JWT
 
 Deletes comment (owner only). Decrements post's `commentCount`. Path: `/{commentId}`
 
@@ -173,10 +145,7 @@ Deletes comment (owner only). Decrements post's `commentCount`. Path: `/{comment
 ---
 
 ### CommentsList
-|------------|-----------------------------------|
-| **Path**   | `comments/CommentsList/index.mjs` |
-| **Method** | GET                               |
-| **Auth**   | None                              |
+`comments/CommentsList/index.mjs` · **GET** · public
 
 Lists comments for post (oldest first). Path: `/posts/{postId}/comments`
 
@@ -189,10 +158,7 @@ Lists comments for post (oldest first). Path: `/posts/{postId}/comments`
 ## Users (8 functions)
 
 ### UsersGetProfile
-|------------|-----------------------------------|
-| **Path**   | `users/UsersGetProfile/index.mjs` |
-| **Method** | GET                               |
-| **Auth**   | Bearer JWT                        |
+`users/UsersGetProfile/index.mjs` · **GET** · JWT
 
 Returns authenticated user's profile (excludes passwordHash).
 
@@ -201,14 +167,12 @@ Returns authenticated user's profile (excludes passwordHash).
 ---
 
 ### UsersAddAvatar
-|------------|---------------------------------|
-| **Path**   | `users/UsersAddAvatar/index.js` |
-| **Method** | POST                            |
-| **Auth**   | Bearer JWT                      |
+`users/UsersAddAvatar/index.js` · **POST** · JWT
 
 Adds avatar (base64 data URL). Max 10KB, limit 50 per user. Auto-sets as active.
 
 **Input:**
+
 ```json
 { "dataUrl": "data:image/..." }
 ```
@@ -218,10 +182,7 @@ Adds avatar (base64 data URL). Max 10KB, limit 50 per user. Auto-sets as active.
 ---
 
 ### UsersSetActiveAvatar
-|------------|---------------------------------------|
-| **Path**   | `users/UsersSetActiveAvatar/index.js` |
-| **Method** | PUT                                   |
-| **Auth**   | Bearer JWT                            |
+`users/UsersSetActiveAvatar/index.js` · **PUT** · JWT
 
 Sets active avatar. Path: `/{avatarId}`
 
@@ -230,10 +191,7 @@ Sets active avatar. Path: `/{avatarId}`
 ---
 
 ### UsersDeleteAvatar
-|------------|------------------------------------|
-| **Path**   | `users/UsersDeleteAvatar/index.js` |
-| **Method** | DELETE                             |
-| **Auth**   | Bearer JWT                         |
+`users/UsersDeleteAvatar/index.js` · **DELETE** · JWT
 
 Deletes avatar. Cannot delete active avatar. Path: `/{avatarId}`
 
@@ -242,10 +200,7 @@ Deletes avatar. Cannot delete active avatar. Path: `/{avatarId}`
 ---
 
 ### UsersGetUserAvatar
-|------------|-------------------------------------|
-| **Path**   | `users/UsersGetUserAvatar/index.js` |
-| **Method** | GET                                 |
-| **Auth**   | None (public)                       |
+`users/UsersGetUserAvatar/index.js` · **GET** · public
 
 Fetches user's avatars and active avatar data. Path: `/{userId}`
 
@@ -254,14 +209,12 @@ Fetches user's avatars and active avatar data. Path: `/{userId}`
 ---
 
 ### UsersUpdateEmail
-|------------|-----------------------------------|
-| **Path**   | `users/UsersUpdateEmail/index.js` |
-| **Method** | PUT                               |
-| **Auth**   | Bearer JWT                        |
+`users/UsersUpdateEmail/index.js` · **PUT** · JWT
 
 Updates email. Validates format (must contain `@`).
 
 **Input:**
+
 ```json
 { "email": "user@example.com" }
 ```
@@ -271,10 +224,7 @@ Updates email. Validates format (must contain `@`).
 ---
 
 ### UsersDeleteEmail
-|------------|-----------------------------------|
-| **Path**   | `users/UsersDeleteEmail/index.js` |
-| **Method** | DELETE                            |
-| **Auth**   | Bearer JWT                        |
+`users/UsersDeleteEmail/index.js` · **DELETE** · JWT
 
 Removes email from profile.
 
@@ -283,15 +233,12 @@ Removes email from profile.
 ---
 
 ### UsersUpdatePassword
-|            |                                      |
-|------------|--------------------------------------|
-| **Path**   | `users/UsersUpdatePassword/index.js` |
-| **Method** | PUT                                  |
-| **Auth**   | Bearer JWT                           |
+`users/UsersUpdatePassword/index.js` · **PUT** · JWT
 
 Updates password. Verifies old password. Min 8 chars for new.
 
 **Input:**
+
 ```json
 { "oldPassword": "string", "newPassword": "string" }
 ```
@@ -300,37 +247,71 @@ Updates password. Verifies old password. Min 8 chars for new.
 
 ---
 
+## Notifications (3 functions)
+
+### NotificationsSendEmail
+`notifications/NotoficationsSendEmail/index.mjs` · **Lambda** · internal
+
+Sends email notifications via AWS SES. Handles mentions and comment replies.
+
+**Types:** `POST_MENTION`, `COMMENT_REPLY`, `COMMENT_MENTION`
+
+**Output:** `{ message, count }` (sent email count)
+
+---
+
+### NotificationsCommentsStream
+`notifications/NotificationsCommentsStream/processCommentsStream.mjs` · **DynamoDB Stream** · internal
+
+Processes new comments. Triggers COMMENT_REPLY to post/parent authors and COMMENT_MENTION for @mentions.
+
+**Events:** INSERT only
+
+---
+
+### NotificationsPostsStream
+`notifications/NotofocationsPostsStream/processPostsStream.mjs` · **DynamoDB Stream** · internal
+
+Processes new/edited posts. Triggers POST_MENTION for @mentions in content.
+
+**Events:** INSERT, MODIFY
+
+---
+
 ## Quick Reference
 
-| Function             | Method  | Auth      | Public |
-|----------------------|---------|-----------|--------|
-| AuthRegister         | POST    | -         | Yes    |
-| AuthLogin            | POST    | -         | Yes    |
-| AdminUsers           | GET/PUT | x-user-id | No     |
-| PostCreate           | POST    | JWT       | No     |
-| PostUpdate           | PUT     | JWT       | No     |
-| PostDelete           | DELETE  | JWT       | No     |
-| PostsList            | GET     | -         | Yes    |
-| PostsGet             | GET     | -         | Yes    |
-| PostsRecent          | GET     | -         | Yes    |
-| CommentCreate        | POST    | JWT       | No     |
-| CommentDelete        | DELETE  | JWT       | No     |
-| CommentsList         | GET     | -         | Yes    |
-| UsersGetProfile      | GET     | JWT       | No     |
-| UsersAddAvatar       | POST    | JWT       | No     |
-| UsersSetActiveAvatar | PUT     | JWT       | No     |
-| UsersDeleteAvatar    | DELETE  | JWT       | No     |
-| UsersGetUserAvatar   | GET     | -         | Yes    |
-| UsersUpdateEmail     | PUT     | JWT       | No     |
-| UsersDeleteEmail     | DELETE  | JWT       | No     |
-| UsersUpdatePassword  | PUT     | JWT       | No     |
+| Function                    | Method  | Auth      | Public |
+| --------------------------- | ------- | --------- | ------ |
+| AuthRegister                | POST    | -         | Yes    |
+| AuthLogin                   | POST    | -         | Yes    |
+| AdminUsers                  | GET/PUT | x-user-id | No     |
+| PostCreate                  | POST    | JWT       | No     |
+| PostUpdate                  | PUT     | JWT       | No     |
+| PostDelete                  | DELETE  | JWT       | No     |
+| PostsList                   | GET     | -         | Yes    |
+| PostsGet                    | GET     | -         | Yes    |
+| PostsRecent                 | GET     | -         | Yes    |
+| CommentCreate               | POST    | JWT       | No     |
+| CommentDelete               | DELETE  | JWT       | No     |
+| CommentsList                | GET     | -         | Yes    |
+| UsersGetProfile             | GET     | JWT       | No     |
+| UsersAddAvatar              | POST    | JWT       | No     |
+| UsersSetActiveAvatar        | PUT     | JWT       | No     |
+| UsersDeleteAvatar           | DELETE  | JWT       | No     |
+| UsersGetUserAvatar          | GET     | -         | Yes    |
+| UsersUpdateEmail            | PUT     | JWT       | No     |
+| UsersDeleteEmail            | DELETE  | JWT       | No     |
+| UsersUpdatePassword         | PUT     | JWT       | No     |
+| NotificationsSendEmail      | Lambda  | -         | No     |
+| NotificationsCommentsStream | Stream  | -         | No     |
+| NotificationsPostsStream    | Stream  | -         | No     |
 
 ---
 
 ## Database Tables
 
 | Table        | Hash Key  | GSIs                             |
-|--------------|-----------|----------------------------------|
+| ------------ | --------- | -------------------------------- |
 | CMS-Users    | userId    | username-index                   |
 | CMS-Posts    | postId    | userId-index, createdAt-index    |
 | CMS-Comments | commentId | postId-index (+ createdAt range) |
@@ -349,7 +330,7 @@ Discovered during detailed spec review. See individual `.specs/*.md` files for d
 ### Data Inconsistencies
 
 | Issue                                     | Affected Functions                                             |
-|-------------------------------------------|----------------------------------------------------------------|
+| ----------------------------------------- | -------------------------------------------------------------- |
 | `updatedAt` as ISO string vs Unix ms      | User functions use ISO, Post/Comment use Unix                  |
 | JWT userId extraction (`sub` vs `userId`) | Most use both, UsersGetProfile uses only `userId`              |
 | Missing 404 for non-existent items        | UsersDeleteAvatar, CommentsList (empty array for missing post) |

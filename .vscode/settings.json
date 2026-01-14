@@ -1,12 +1,8 @@
 {
   "biome.lsp.bin": "./dev-local/node_modules/.bin/biome",
   "biome.configurationPath": "./biome.json",
-  "editor.defaultFormatter": "biomejs.biome",
-  "editor.formatOnSave": true,
   "[javascript]": { "editor.defaultFormatter": "biomejs.biome" },
   "[javascriptreact]": { "editor.defaultFormatter": "biomejs.biome" },
   "[typescript]": { "editor.defaultFormatter": "biomejs.biome" },
   "[typescriptreact]": { "editor.defaultFormatter": "biomejs.biome" },
-  "[json]": { "editor.defaultFormatter": "biomejs.biome" },
-  "[jsonc]": { "editor.defaultFormatter": "biomejs.biome" }
 }
