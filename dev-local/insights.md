@@ -31,3 +31,11 @@
 - Gotcha: AuthLogin was signing tokens with different secret than most verification handlers - cross-function auth broken
 - Gotcha: UsersUpdatePassword kept strict (throws if no env var) - intentionally different pattern
 - Pattern: `.mjs` files use double quotes, `.js` files use single quotes for consistency
+
+## 2026-01-14: Local API server for frontend dev
+
+- Decision: Created `server.mjs` using Bun.serve() to route HTTP requests to Lambda handlers
+- Gotcha: Handler directories had no node_modules - created symlinks to dev-local/node_modules
+- Gotcha: Added `uuid` package (PostCreate dependency) to dev-local/package.json
+- Pattern: Set env vars and delete AWS_PROFILE before importing handlers to avoid credential conflicts
+- Pattern: setup-db.sh creates symlinks from handler dirs to dev-local/node_modules (new clones get them automatically)

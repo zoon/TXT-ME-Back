@@ -16,4 +16,9 @@ npm install --silent
 echo "Creating tables..."
 node scripts/create-tables.mjs
 
-echo "Database is ready at http://127.0.0.1:8000"
+echo "Linking handler dependencies..."
+for dir in ../auth/*/ ../posts/*/ ../comments/*/ ../users/*/; do
+  [ -d "$dir" ] && [ ! -e "${dir}node_modules" ] && ln -s "$(pwd)/node_modules" "${dir}node_modules"
+done
+
+echo "Ready! Start server with: bun run server"
