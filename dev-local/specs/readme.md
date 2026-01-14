@@ -342,19 +342,6 @@ Updates password. Verifies old password. Min 8 chars for new.
 
 Discovered during detailed spec review. See individual `.specs/*.md` files for details.
 
-### Critical: JWT Secret Inconsistency
-
-Three different fallback secrets - cross-function auth will fail:
-
-**`cms-jwt-secret-prod-2025`** (12 functions)
-AuthLogin, AuthRegister, PostCreate, PostUpdate, PostDelete, CommentCreate, CommentDelete, UsersGetProfile, UsersAddAvatar, UsersDeleteAvatar, UsersUpdateEmail, UsersUpdatePassword
-
-**`cms-jwt-secret-change-in-production`** (1 function)
-UsersSetActiveAvatar
-
-**`your-secret-key-here`** (1 function)
-UsersDeleteEmail
-
 ### Critical: AdminUsers No Auth
 
 `AdminUsers` only checks for `x-user-id` header presence - any value grants full admin access.
