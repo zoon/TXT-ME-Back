@@ -2,6 +2,8 @@
   "name": "txt-me-back",
   "type": "module",
   "scripts": {
+    "server": "bun run server.mjs",
+    "activate": "bun run scripts/activate-user.mjs",
     "setup-db": "node scripts/create-tables.mjs",
     "test": "bun test --preload ./test/preload.ts",
     "test:watch": "bun test --watch --preload ./test/preload.ts",
@@ -19,6 +21,7 @@
     "@aws-sdk/lib-dynamodb": "^3.958.0",
     "bcryptjs": "^3.0.3",
     "jsonwebtoken": "^9.0.2",
+    "uuid": "^13.0.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {

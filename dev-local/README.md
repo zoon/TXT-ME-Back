@@ -1,42 +1,50 @@
 # Local Development Environment
 
-DynamoDB Local setup for local Lambda development.
+DynamoDB Local + API server for full-stack local development.
 
 ## Quick Start
 
 ```bash
-./setup-db.sh
+./setup-db.sh        # Start DynamoDB, create tables, link dependencies
+bun run server       # Start API server on :3001
 ```
 
-This will:
-1. Create data directory with correct permissions
-2. Start DynamoDB Local container (port 8000)
-3. Install Node.js dependencies
-4. Create all required tables
+Then run frontend with:
+```bash
+cd ../TXT-ME
+VITE_API_URL=http://127.0.0.1:3001 npm run dev
+```
 
 ## Endpoints
 
 | Service | URL |
 |---------|-----|
+| API Server | http://127.0.0.1:3001 |
 | DynamoDB Local | http://127.0.0.1:8000 |
 
 ## Commands
 
 ```bash
-# Start fresh
-./setup-db.sh
+# Database
+./setup-db.sh              # Start DynamoDB + create tables
+docker-compose down        # Stop DynamoDB
+docker-compose restart     # Restart (preserves data)
+rm -rf data/dynamodb && ./setup-db.sh  # Reset data
 
-# Stop
-docker-compose down
+# Server
+bun run server             # Start API server
 
-# Restart (preserves data)
-docker-compose restart
+# User management
+bun run activate           # List all users
+bun run activate <user>    # Activate user as 'user' role
+bun run activate <user> admin  # Activate as 'admin'
+bun run activate --all     # Activate all pending users
 
-# View logs
-docker-compose logs -f
-
-# Reset data
-rm -rf data/dynamodb && ./setup-db.sh
+# Testing
+bun test                   # Run all tests
+bun run test:watch         # Watch mode
+bun run lint               # Lint check
+bun run ci                 # Full CI pipeline
 ```
 
 ## Tables Created
@@ -50,13 +58,30 @@ rm -rf data/dynamodb && ./setup-db.sh
 
 ```
 dev-local/
+  server.mjs            # Local API server (routes to Lambda handlers)
   docker-compose.yml    # DynamoDB Local config
   setup-db.sh           # Setup script
-  package.json          # Dev dependencies
+  package.json          # Dev dependencies & scripts
   scripts/
     create-tables.mjs   # Table creation
+    activate-user.mjs   # User activation CLI
+  test/                 # Integration tests
   data/
     dynamodb/           # Persistent storage (gitignored)
+```
+
+## Frontend Integration
+
+The API server (`server.mjs`) routes HTTP requests to Lambda handlers. Frontend connects via `VITE_API_URL` env var:
+
+```bash
+# In TXT-ME frontend directory
+VITE_API_URL=http://127.0.0.1:3001 npm run dev
+```
+
+New users registered via frontend need activation before login:
+```bash
+bun run activate <username>
 ```
 
 ## Connecting from Lambda code
@@ -69,8 +94,14 @@ const client = new DynamoDBClient({
 });
 ```
 
+## How It Works
+
+Lambda handlers (e.g., `auth/AuthLogin/`) have no local `node_modules` — they're bundled at deploy time. For local dev, `setup-db.sh` creates symlinks from each handler directory to `dev-local/node_modules`, allowing the API server to import and run handlers locally.
+
 ## Troubleshooting
 
 **WSL localhost issues:** Use `127.0.0.1` instead of `localhost`. See DEVLOG.md for details.
 
 **Permission errors:** Run `chmod 777 data/dynamodb` or delete and re-run setup.
+
+**Missing dependencies:** Re-run `./setup-db.sh` to recreate symlinks.
