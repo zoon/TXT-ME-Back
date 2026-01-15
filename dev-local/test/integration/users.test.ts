@@ -430,6 +430,23 @@ describe("Users", () => {
       // Handler checks for missing avatarId
       expect(response.statusCode).toBe(400);
     });
+
+    test("regression: avatarId must come from path parameters, not body", async () => {
+      // Regression test for bug where route was missing :avatarId path parameter
+      // The handler expects avatarId in pathParameters, NOT in request body
+      const event = buildAuthEvent(userTestUser, {
+        method: "PUT",
+        body: { avatarId: testAvatarId }, // Wrong: avatarId in body
+        pathParameters: {}, // Missing from path params
+      });
+
+      const response = await setActiveAvatarHandler(event);
+
+      // Should return 400 because avatarId is not in pathParameters
+      expect(response.statusCode).toBe(400);
+      const body = parseBody<{ error: string }>(response);
+      expect(body.error).toBe("Missing avatarId");
+    });
   });
 
   describe("UsersDeleteAvatar", () => {
