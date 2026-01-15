@@ -4,8 +4,8 @@
  * Tests AuthRegister and AuthLogin against DynamoDB Local
  */
 
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { DeleteCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { afterAll, beforeAll, describe, expect, spyOn, test } from "bun:test";
+import { DeleteCommand, GetCommand, PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import bcrypt from "bcryptjs";
 import { handler as loginHandler } from "../../../auth/AuthLogin/index.mjs";
 // Import handlers
@@ -106,6 +106,143 @@ describe("AuthRegister", () => {
 
     const body = parseBody<{ error: string }>(response);
     expect(body.error).toBe("Username already exists");
+  });
+
+  test("saves email when provided during registration", async () => {
+    const username = `emailtest-${uniqueId("reg")}`;
+    const email = `${username}@test.com`;
+
+    const event = buildEvent({
+      method: "POST",
+      body: { username, password: "testpassword123", email },
+    });
+
+    const response = await registerHandler(event);
+    expect(response.statusCode).toBe(201);
+
+    const body = parseBody<{ userId: string }>(response);
+
+    // Verify email was actually saved to database
+    const { Item } = await docClient.send(
+      new GetCommand({
+        TableName: TABLES.USERS,
+        Key: { userId: body.userId },
+      }),
+    );
+
+    expect(Item?.email).toBe(email);
+
+    // Cleanup
+    await docClient.send(
+      new DeleteCommand({
+        TableName: TABLES.USERS,
+        Key: { userId: body.userId },
+      }),
+    );
+  });
+
+  /**
+   * Regression test: Race condition in concurrent registrations
+   *
+   * The current implementation uses check-then-put which is not atomic.
+   * Concurrent registrations with the same username could both succeed,
+   * creating duplicate users. This test will FAIL until we add a
+   * conditional put with attribute_not_exists().
+   */
+  test("prevents duplicate users under concurrent registration", async () => {
+    const username = `racetest-${uniqueId("race")}`;
+    const userIds: string[] = [];
+
+    // Fire two concurrent registrations with the same username
+    const event1 = buildEvent({
+      method: "POST",
+      body: { username, password: "password1" },
+    });
+    const event2 = buildEvent({
+      method: "POST",
+      body: { username, password: "password2" },
+    });
+
+    const [response1, response2] = await Promise.all([
+      registerHandler(event1),
+      registerHandler(event2),
+    ]);
+
+    // Collect userIds from successful registrations for cleanup
+    if (response1.statusCode === 201) {
+      userIds.push(parseBody<{ userId: string }>(response1).userId);
+    }
+    if (response2.statusCode === 201) {
+      userIds.push(parseBody<{ userId: string }>(response2).userId);
+    }
+
+    // Verify: exactly one should succeed (201), one should fail (409)
+    const statusCodes = [response1.statusCode, response2.statusCode].sort();
+    expect(statusCodes).toEqual([201, 409]);
+
+    // Double-check: query DB to ensure only one user exists with this username
+    const { Items } = await docClient.send(
+      new QueryCommand({
+        TableName: TABLES.USERS,
+        IndexName: "username-index",
+        KeyConditionExpression: "username = :username",
+        ExpressionAttributeValues: { ":username": username },
+      }),
+    );
+    expect(Items?.length).toBe(1);
+
+    // Cleanup all created users
+    for (const userId of userIds) {
+      await docClient.send(
+        new DeleteCommand({
+          TableName: TABLES.USERS,
+          Key: { userId },
+        }),
+      );
+    }
+  });
+
+  /**
+   * Regression test: PII (password) should not be logged
+   *
+   * The handler logs the entire event with console.log, which includes
+   * the password in plaintext. This test verifies that passwords are
+   * not exposed in logs.
+   */
+  test("does not log password in plaintext", async () => {
+    const username = `logtest-${uniqueId("log")}`;
+    const sensitivePassword = `secret-${uniqueId("pwd")}-sensitive`;
+    const loggedMessages: string[] = [];
+
+    // Spy on console.log to capture logged messages
+    const consoleSpy = spyOn(console, "log").mockImplementation((...args) => {
+      loggedMessages.push(args.map(String).join(" "));
+    });
+
+    const event = buildEvent({
+      method: "POST",
+      body: { username, password: sensitivePassword },
+    });
+
+    const response = await registerHandler(event);
+
+    // Restore console.log
+    consoleSpy.mockRestore();
+
+    // Check that password was not logged
+    const logOutput = loggedMessages.join("\n");
+    expect(logOutput).not.toContain(sensitivePassword);
+
+    // Cleanup if user was created
+    if (response.statusCode === 201) {
+      const body = parseBody<{ userId: string }>(response);
+      await docClient.send(
+        new DeleteCommand({
+          TableName: TABLES.USERS,
+          Key: { userId: body.userId },
+        }),
+      );
+    }
   });
 });
 

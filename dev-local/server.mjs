@@ -37,7 +37,7 @@ const routes = [
   ["DELETE", "/admin/users/profile/email", "../users/UsersDeleteEmail/index.js", []],
   ["PUT", "/admin/users/profile/password", "../users/UsersUpdatePassword/index.js", []],
   ["POST", "/admin/users/profile/avatar", "../users/UsersAddAvatar/index.js", []],
-  ["PUT", "/admin/users/profile/avatar/active", "../users/UsersSetActiveAvatar/index.js", []],
+  ["PUT", "/admin/users/profile/avatar/active/:avatarId", "../users/UsersSetActiveAvatar/index.js", ["avatarId"]],
   ["DELETE", "/admin/users/profile/avatar/:avatarId", "../users/UsersDeleteAvatar/index.js", ["avatarId"]],
 
   // Public user data
