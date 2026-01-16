@@ -37,3 +37,4 @@ auth.zip
 
 # Package locks (опционально)
 # package-lock.json
+/docker/dynamodb/shared-local-instance.db
