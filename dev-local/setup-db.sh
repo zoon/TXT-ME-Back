@@ -2,7 +2,7 @@
 set -e
 
 echo "Preparing data directory..."
-mkdir -p data/dynamodb && chmod 777 data/dynamodb
+mkdir -p ../docker/dynamodb && chmod 777 ../docker/dynamodb
 
 echo "Starting Local DynamoDB..."
 docker-compose up -d

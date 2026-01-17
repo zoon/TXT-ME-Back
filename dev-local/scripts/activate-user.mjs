@@ -32,7 +32,7 @@ async function activateUser(userId, role) {
       UpdateExpression: "SET #role = :r",
       ExpressionAttributeNames: { "#role": "role" },
       ExpressionAttributeValues: { ":r": role },
-    })
+    }),
   );
 }
 
@@ -49,7 +49,7 @@ async function main() {
   if (args.length === 0) {
     console.log("\nUsers in local DB:\n");
     console.log("  USERNAME            ROLE        STATUS");
-    console.log("  " + "-".repeat(50));
+    console.log(`  ${"-".repeat(50)}`);
     for (const u of users) {
       const status = u.role ? "✓ active" : "⏳ pending";
       const role = u.role || "-";
