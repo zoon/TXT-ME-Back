@@ -29,7 +29,12 @@ const routes = [
   // Comments
   ["GET", "/posts/:id/comments", "../comments/CommentsList/index.mjs", ["id"]],
   ["POST", "/posts/:id/comments", "../comments/CommentCreate/index.mjs", ["id"]],
-  ["DELETE", "/posts/:id/comments/:commentId", "../comments/CommentDelete/index.mjs", ["id", "commentId"]],
+  [
+    "DELETE",
+    "/posts/:id/comments/:commentId",
+    "../comments/CommentDelete/index.mjs",
+    ["id", "commentId"],
+  ],
 
   // Users profile (frontend uses /admin/users/profile paths)
   ["GET", "/admin/users/profile", "../users/UsersGetProfile/index.mjs", []],
@@ -37,8 +42,18 @@ const routes = [
   ["DELETE", "/admin/users/profile/email", "../users/UsersDeleteEmail/index.js", []],
   ["PUT", "/admin/users/profile/password", "../users/UsersUpdatePassword/index.js", []],
   ["POST", "/admin/users/profile/avatar", "../users/UsersAddAvatar/index.js", []],
-  ["PUT", "/admin/users/profile/avatar/active/:avatarId", "../users/UsersSetActiveAvatar/index.js", ["avatarId"]],
-  ["DELETE", "/admin/users/profile/avatar/:avatarId", "../users/UsersDeleteAvatar/index.js", ["avatarId"]],
+  [
+    "PUT",
+    "/admin/users/profile/avatar/active/:avatarId",
+    "../users/UsersSetActiveAvatar/index.js",
+    ["avatarId"],
+  ],
+  [
+    "DELETE",
+    "/admin/users/profile/avatar/:avatarId",
+    "../users/UsersDeleteAvatar/index.js",
+    ["avatarId"],
+  ],
 
   // Public user data
   ["GET", "/users/:username/avatar", "../users/UsersGetUserAvatar/index.js", ["username"]],
@@ -56,7 +71,7 @@ async function getHandler(handlerPath) {
 }
 
 function matchRoute(method, pathname) {
-  for (const [routeMethod, pattern, handlerPath, paramNames] of routes) {
+  for (const [routeMethod, pattern, handlerPath, _paramNames] of routes) {
     if (routeMethod !== method) continue;
 
     const patternParts = pattern.split("/");
@@ -92,7 +107,7 @@ function corsHeaders() {
   };
 }
 
-const server = Bun.serve({
+Bun.serve({
   port: PORT,
   async fetch(req) {
     const url = new URL(req.url);
