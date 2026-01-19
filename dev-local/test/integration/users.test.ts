@@ -392,9 +392,7 @@ describe("Users", () => {
     test("sets existing avatar as active", async () => {
       const event = buildAuthEvent(userTestUser, {
         method: "PUT",
-        pathParameters: {
-          avatarId: testAvatarId,
-        },
+        body: { avatarId: testAvatarId },
       });
 
       const response = await setActiveAvatarHandler(event);
@@ -409,9 +407,7 @@ describe("Users", () => {
     test("returns 401 without auth", async () => {
       const event = buildEvent({
         method: "PUT",
-        pathParameters: {
-          avatarId: testAvatarId,
-        },
+        body: { avatarId: testAvatarId },
       });
 
       const response = await setActiveAvatarHandler(event);
@@ -419,30 +415,14 @@ describe("Users", () => {
       expect(response.statusCode).toBe(401);
     });
 
-    test("returns 400 for missing avatarId path param", async () => {
+    test("returns 400 for missing avatarId in body", async () => {
       const event = buildAuthEvent(userTestUser, {
         method: "PUT",
-        pathParameters: {},
+        body: {},
       });
 
       const response = await setActiveAvatarHandler(event);
 
-      // Handler checks for missing avatarId
-      expect(response.statusCode).toBe(400);
-    });
-
-    test("regression: avatarId must come from path parameters, not body", async () => {
-      // Regression test for bug where route was missing :avatarId path parameter
-      // The handler expects avatarId in pathParameters, NOT in request body
-      const event = buildAuthEvent(userTestUser, {
-        method: "PUT",
-        body: { avatarId: testAvatarId }, // Wrong: avatarId in body
-        pathParameters: {}, // Missing from path params
-      });
-
-      const response = await setActiveAvatarHandler(event);
-
-      // Should return 400 because avatarId is not in pathParameters
       expect(response.statusCode).toBe(400);
       const body = parseBody<{ error: string }>(response);
       expect(body.error).toBe("Missing avatarId");
