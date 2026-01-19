@@ -72,7 +72,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: corsHeaders,
-      body: JSON.stringify({ message: "Active avatar set", avatarId }),
+      body: JSON.stringify({ message: "Active avatar updated", avatarId }),
     };
   } catch (error) {
     console.error("Full error:", error.message, error.stack);

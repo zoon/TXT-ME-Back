@@ -52,8 +52,6 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         userId: user.userId,
         username: user.username,
-        avatars: avatars,
-        activeAvatarId: user.activeAvatarId || null,
         avatarDataUrl: activeAvatar?.dataUrl || null
       })
     };
