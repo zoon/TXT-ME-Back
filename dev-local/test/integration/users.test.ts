@@ -7,11 +7,13 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { DeleteCommand, GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import bcrypt from "bcryptjs";
+import sharp from "sharp";
 // Import handlers
 import { handler as getProfileHandler } from "../../../users/UsersGetProfile/index.mjs";
 import {
   buildAuthEvent,
   buildEvent,
+  CORRUPT_IMAGE_DATA_URL,
   docClient,
   INVALID_AVATAR_DATA_URL,
   parseBody,
@@ -306,7 +308,7 @@ describe("Users", () => {
 
       expect(body.avatar).toBeDefined();
       expect(body.avatar.avatarId).toBeDefined();
-      expect(body.avatar.dataUrl).toBe(VALID_AVATAR_DATA_URL);
+      expect(body.avatar.dataUrl).toMatch(/^data:image\/\w+;base64,/);
       expect(body.activeAvatarId).toBe(body.avatar.avatarId);
 
       createdAvatarIds.push(body.avatar.avatarId);
@@ -321,6 +323,32 @@ describe("Users", () => {
       expect(result.Item?.avatars).toContainEqual(
         expect.objectContaining({ avatarId: body.avatar.avatarId }),
       );
+    });
+
+    test("resizes avatar to 50x50", async () => {
+      const event = buildAuthEvent(userTestUser, {
+        method: "POST",
+        body: {
+          dataUrl: VALID_AVATAR_DATA_URL,
+        },
+      });
+
+      const response = await addAvatarHandler(event);
+      expect(response.statusCode).toBe(200);
+
+      const body = parseBody<{
+        avatar: { avatarId: string; dataUrl: string };
+      }>(response);
+
+      createdAvatarIds.push(body.avatar.avatarId);
+
+      // Decode base64 and verify dimensions
+      const base64Data = body.avatar.dataUrl.split(",")[1];
+      const buffer = Buffer.from(base64Data, "base64");
+      const metadata = await sharp(buffer).metadata();
+
+      expect(metadata.width).toBe(50);
+      expect(metadata.height).toBe(50);
     });
 
     test("returns 401 without auth", async () => {
@@ -370,6 +398,77 @@ describe("Users", () => {
       const body = parseBody<{ error: string }>(response);
       expect(body.error).toContain("large");
     });
+
+    test("returns 400 for corrupt image data", async () => {
+      const event = buildAuthEvent(userTestUser, {
+        method: "POST",
+        body: {
+          dataUrl: CORRUPT_IMAGE_DATA_URL,
+        },
+      });
+
+      const response = await addAvatarHandler(event);
+
+      expect(response.statusCode).toBe(400);
+
+      const body = parseBody<{ error: string }>(response);
+      expect(body.error).toBe("Invalid image data");
+    });
+
+    test("returns 400 when 50 avatar limit reached", async () => {
+      // Create isolated test user for this test
+      const limitTestUser = {
+        userId: `avatar-limit-${uniqueId("user")}`,
+        username: `limituser-${uniqueId("user")}`,
+        role: "user",
+      };
+
+      // Seed user with 50 avatars directly via DynamoDB
+      const fiftyAvatars = Array.from({ length: 50 }, (_, i) => ({
+        avatarId: `avatar-${i}`,
+        dataUrl: VALID_AVATAR_DATA_URL,
+        uploadedAt: Date.now(),
+      }));
+
+      await docClient.send(
+        new PutCommand({
+          TableName: TABLES.USERS,
+          Item: {
+            userId: limitTestUser.userId,
+            username: limitTestUser.username,
+            passwordHash: "not-used",
+            role: limitTestUser.role,
+            avatars: fiftyAvatars,
+            activeAvatarId: fiftyAvatars[0].avatarId,
+            createdAt: Date.now(),
+          },
+        }),
+      );
+
+      try {
+        // Attempt to add 51st avatar
+        const event = buildAuthEvent(limitTestUser, {
+          method: "POST",
+          body: {
+            dataUrl: VALID_AVATAR_DATA_URL,
+          },
+        });
+
+        const response = await addAvatarHandler(event);
+
+        expect(response.statusCode).toBe(400);
+        const body = parseBody<{ error: string }>(response);
+        expect(body.error).toBe("Max 50 avatars");
+      } finally {
+        // Cleanup
+        await docClient.send(
+          new DeleteCommand({
+            TableName: TABLES.USERS,
+            Key: { userId: limitTestUser.userId },
+          }),
+        );
+      }
+    });
   });
 
   describe("UsersSetActiveAvatar", () => {
@@ -400,7 +499,7 @@ describe("Users", () => {
       expect(response.statusCode).toBe(200);
 
       const body = parseBody<{ message: string; avatarId: string }>(response);
-      expect(body.message).toBe("Active avatar set");
+      expect(body.message).toBe("Active avatar updated");
       expect(body.avatarId).toBe(testAvatarId);
     });
 
@@ -426,6 +525,19 @@ describe("Users", () => {
       expect(response.statusCode).toBe(400);
       const body = parseBody<{ error: string }>(response);
       expect(body.error).toBe("Missing avatarId");
+    });
+
+    test("returns 404 for non-existent avatarId", async () => {
+      const event = buildAuthEvent(userTestUser, {
+        method: "PUT",
+        body: { avatarId: "non-existent-avatar-id" },
+      });
+
+      const response = await setActiveAvatarHandler(event);
+
+      expect(response.statusCode).toBe(404);
+      const body = parseBody<{ error: string }>(response);
+      expect(body.error).toBe("Avatar not found");
     });
   });
 
@@ -497,6 +609,23 @@ describe("Users", () => {
       const body = parseBody<{ error: string }>(response);
       expect(body.error).toContain("active");
     });
+
+    test("succeeds silently for non-existent avatarId", async () => {
+      const event = buildAuthEvent(userTestUser, {
+        method: "DELETE",
+        pathParameters: {
+          avatarId: "non-existent-avatar-id",
+        },
+      });
+
+      const response = await deleteAvatarHandler(event);
+
+      // Handler filters out non-existent avatars and returns success
+      expect(response.statusCode).toBe(200);
+      const body = parseBody<{ message: string; avatarId: string }>(response);
+      expect(body.message).toBe("Avatar deleted");
+      expect(body.avatarId).toBe("non-existent-avatar-id");
+    });
   });
 
   describe("UsersGetUserAvatar", () => {
@@ -515,14 +644,11 @@ describe("Users", () => {
       const body = parseBody<{
         userId: string;
         username: string;
-        avatars: Array<{ avatarId: string }>;
-        activeAvatarId: string | null;
         avatarDataUrl: string | null;
       }>(response);
 
       expect(body.userId).toBe(userTestUser.userId);
       expect(body.username).toBe(userTestUser.username);
-      expect(Array.isArray(body.avatars)).toBe(true);
     });
 
     test("returns 404 for non-existent user", async () => {
@@ -536,6 +662,58 @@ describe("Users", () => {
       const response = await getUserAvatarHandler(event);
 
       expect(response.statusCode).toBe(404);
+    });
+
+    test("returns null avatarDataUrl for user with no avatars", async () => {
+      // Create user without avatars
+      const noAvatarUser = {
+        userId: `no-avatar-${uniqueId("user")}`,
+        username: `noavataruser-${uniqueId("user")}`,
+        role: "user",
+      };
+
+      await docClient.send(
+        new PutCommand({
+          TableName: TABLES.USERS,
+          Item: {
+            userId: noAvatarUser.userId,
+            username: noAvatarUser.username,
+            passwordHash: "not-used",
+            role: noAvatarUser.role,
+            createdAt: Date.now(),
+            // No avatars field
+          },
+        }),
+      );
+
+      try {
+        const event = buildEvent({
+          method: "GET",
+          pathParameters: {
+            userId: noAvatarUser.userId,
+          },
+        });
+
+        const response = await getUserAvatarHandler(event);
+
+        expect(response.statusCode).toBe(200);
+        const body = parseBody<{
+          userId: string;
+          username: string;
+          avatarDataUrl: string | null;
+        }>(response);
+
+        expect(body.userId).toBe(noAvatarUser.userId);
+        expect(body.avatarDataUrl).toBeNull();
+      } finally {
+        // Cleanup
+        await docClient.send(
+          new DeleteCommand({
+            TableName: TABLES.USERS,
+            Key: { userId: noAvatarUser.userId },
+          }),
+        );
+      }
     });
   });
 

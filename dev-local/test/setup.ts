@@ -101,6 +101,9 @@ export const VALID_AVATAR_DATA_URL =
 // Invalid data URL for testing validation
 export const INVALID_AVATAR_DATA_URL = "not-a-valid-data-url";
 
+// Corrupt image: valid base64 format but not decodable by sharp
+export const CORRUPT_IMAGE_DATA_URL = "data:image/png;base64,YWJjZGVm"; // "abcdef" - valid base64, not an image
+
 /**
  * Generate JWT token for a test user
  */

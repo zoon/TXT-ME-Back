@@ -29,8 +29,10 @@ Content-Type: application/json
 ```
 
 **Validation:**
+- Allowed formats: JPEG, PNG, GIF (SVG blocked for security)
 - Image format: base64 data URL
-- Max size: 10KB
+- Max size: 10KB data URL string (~7KB raw image due to base64 overhead)
+- Max dimensions: 2500x2500 pixels (DoS protection)
 - Auto-resize: 50x50px
 - Max avatars per user: 50
 
@@ -48,7 +50,7 @@ Content-Type: application/json
 ```
 
 **Errors:**
-- `400` - Invalid image data / Image too large / Max 50 avatars reached
+- `400` - Invalid image data / Unsupported format / Image too large / Max 50 avatars reached
 
 ---
 
@@ -73,6 +75,9 @@ Authorization: Bearer <jwt_token>
   "avatarId": "1767873680398"
 }
 ```
+
+**Behavior:**
+- Idempotent: returns 200 even if avatarId doesn't exist (DELETE is idempotent per HTTP spec)
 
 **Errors:**
 - `400` - Cannot delete active avatar (set another as active first)
