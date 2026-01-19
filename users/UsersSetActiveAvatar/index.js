@@ -30,7 +30,8 @@ exports.handler = async (event) => {
 
     const userToken = jwt.verify(token, JWT_SECRET);
 
-    const avatarId = event.pathParameters?.avatarId;
+    const body = JSON.parse(event.body || "{}");
+    const avatarId = body.avatarId;
     if (!avatarId) {
       return {
         statusCode: 400,
