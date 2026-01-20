@@ -44,9 +44,9 @@ const routes = [
   ["POST", "/admin/users/profile/avatar", "../users/UsersAddAvatar/index.js", []],
   [
     "PUT",
-    "/admin/users/profile/avatar/active/:avatarId",
+    "/admin/users/profile/avatar/active",
     "../users/UsersSetActiveAvatar/index.js",
-    ["avatarId"],
+    [],
   ],
   [
     "DELETE",
@@ -56,7 +56,7 @@ const routes = [
   ],
 
   // Public user data
-  ["GET", "/users/:username/avatar", "../users/UsersGetUserAvatar/index.js", ["username"]],
+  ["GET", "/users/:userId/avatar", "../users/UsersGetUserAvatar/index.js", ["userId"]],
 ];
 
 // Handler cache
