@@ -7,7 +7,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { DeleteCommand, GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import bcrypt from "bcryptjs";
-import sharp from "sharp";
+import { Jimp } from "jimp";
 // Import handlers
 import { handler as getProfileHandler } from "../../../users/UsersGetProfile/index.mjs";
 import {
@@ -345,10 +345,10 @@ describe("Users", () => {
       // Decode base64 and verify dimensions
       const base64Data = body.avatar.dataUrl.split(",")[1];
       const buffer = Buffer.from(base64Data, "base64");
-      const metadata = await sharp(buffer).metadata();
+      const image = await Jimp.read(buffer);
 
-      expect(metadata.width).toBe(50);
-      expect(metadata.height).toBe(50);
+      expect(image.width).toBe(50);
+      expect(image.height).toBe(50);
     });
 
     test("returns 401 without auth", async () => {
