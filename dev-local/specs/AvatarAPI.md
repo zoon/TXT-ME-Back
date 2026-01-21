@@ -80,7 +80,7 @@ Authorization: Bearer <jwt_token>
 - Idempotent: returns 200 even if avatarId doesn't exist (DELETE is idempotent per HTTP spec)
 
 **Errors:**
-- `400` - Cannot delete active avatar (set another as active first)
+- `409` - Cannot delete active avatar (set another as active first)
 
 ---
 
@@ -143,7 +143,35 @@ GET /admin/users/1e05ccde-eea0-4f10-b52e-969678efc2d8/avatars/1767873680398
 
 ---
 
-### 5. Get Own Profile (with Avatars)
+### 5. Get User Active Avatar (Named Sub-Resource)
+
+**Endpoint:** `GET /admin/users/{userId}/avatars/active`
+**Lambda:** CMS-Users-GetUserAvatar
+**Auth:** Not required (public)
+
+**Request:**
+
+```http
+GET /admin/users/1e05ccde-eea0-4f10-b52e-969678efc2d8/avatars/active
+```
+
+**Response 200:**
+
+```json
+{
+  "userId": "1e05ccde-eea0-4f10-b52e-969678efc2d8",
+  "username": "kattrend",
+  "avatarId": "1767873680398",
+  "avatarDataUrl": "data:image/jpeg;base64,..." // or null
+}
+```
+
+**Errors:**
+- `404` - User not found
+
+---
+
+### 6. Get Own Profile (with Avatars)
 
 **Endpoint:** `GET /admin/users/profile`
 **Lambda:** CMS-Users-GetProfile
@@ -179,7 +207,7 @@ Authorization: Bearer <jwt_token>
 
 ---
 
-### 6. Email Management (Bonus Info)
+### 7. Email Management (Bonus Info)
 
 **Endpoints:**
 - `PUT /admin/users/profile/email` - Update email
@@ -196,6 +224,7 @@ Authorization: Bearer <jwt_token>
 | CMS-Users-DeleteAvatar    | /admin/users/profile/avatar/{avatarId}   | DELETE | JWT    |
 | CMS-Users-SetActiveAvatar | /admin/users/profile/avatar/active       | PUT    | JWT    |
 | CMS-Users-GetUserAvatar   | /admin/users/{userId}/avatars/{avatarId} | GET    | Public |
+| CMS-Users-GetUserActiveAvatar | /admin/users/{userId}/avatars/active     | GET    | Public |
 | CMS-Users-GetProfile      | /admin/users/profile                     | GET    | JWT    |
 | CMS-Users-UpdateEmail     | /admin/users/profile/email               | PUT    | JWT    |
 | CMS-Users-DeleteEmail     | /admin/users/profile/email               | DELETE | JWT    |

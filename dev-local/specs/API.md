@@ -42,6 +42,8 @@ Base URL: `https://326ltbm205.execute-api.eu-north-1.amazonaws.com/prod`
 | DELETE | /admin/users/profile/avatar/{avatarId}   | JWT  | Delete avatar     |
 | PUT    | /admin/users/profile/avatar/active       | JWT  | Set active avatar |
 | GET    | /admin/users/{userId}/avatars/{avatarId} | -    | Get user's avatar |
+| GET    | /admin/users/{userId}/avatars/active     | -    | Get active avatar |
+
 
 ## Authentication
 
