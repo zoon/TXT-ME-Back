@@ -56,7 +56,7 @@ const routes = [
   ],
 
   // Public user data
-  ["GET", "/users/:userId/avatar", "../users/UsersGetUserAvatar/index.js", ["userId"]],
+  ["GET", "/admin/users/:userId/avatars/:avatarId", "../users/UsersGetUserAvatar/index.js", ["userId", "avatarId"]],
 ];
 
 // Handler cache

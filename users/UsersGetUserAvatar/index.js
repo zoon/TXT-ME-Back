@@ -21,9 +21,11 @@ exports.handler = async (event) => {
       };
     }
 
-    const userId = event.pathParameters.userId;
-    
-    console.log('Fetching avatar for userId:', userId);
+    const pathParams = event.pathParameters || {};
+    const userId = pathParams.userId;
+    const requestedAvatarId = pathParams.avatarId;
+
+    console.log('Fetching avatar for userId:', userId, 'avatarId:', requestedAvatarId);
     
     // Получаем пользователя по userId
     const result = await dynamodb.send(new GetCommand({
@@ -42,17 +44,27 @@ exports.handler = async (event) => {
     
     const user = result.Item;
     const avatars = user.avatars || [];
-    const activeAvatar = avatars.find(a => a.avatarId === user.activeAvatarId);
-    
+    const fallbackAvatarId = requestedAvatarId || user.activeAvatarId;
+    const avatar = fallbackAvatarId ? avatars.find(a => a.avatarId === fallbackAvatarId) : null;
+
     console.log('User found:', user.username, 'avatars:', avatars.length);
-    
+
+    if (!avatar && requestedAvatarId) {
+      return {
+        statusCode: 404,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Avatar not found' })
+      };
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({
         userId: user.userId,
         username: user.username,
-        avatarDataUrl: activeAvatar?.dataUrl || null
+        avatarId: avatar ? avatar.avatarId : null,
+        avatarDataUrl: avatar ? avatar.dataUrl : null
       })
     };
   } catch (error) {

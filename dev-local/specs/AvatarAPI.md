@@ -118,14 +118,14 @@ Content-Type: application/json
 
 ### 4. Get User Avatar (Public)
 
-**Endpoint:** `GET /admin/users/{userId}/avatar`
+**Endpoint:** `GET /admin/users/{userId}/avatars/{avatarId}`
 **Lambda:** CMS-Users-GetUserAvatar
 **Auth:** Not required (public)
 
 **Request:**
 
 ```http
-GET /admin/users/1e05ccde-eea0-4f10-b52e-969678efc2d8/avatar
+GET /admin/users/1e05ccde-eea0-4f10-b52e-969678efc2d8/avatars/1767873680398
 ```
 
 **Response 200:**
@@ -190,13 +190,13 @@ Authorization: Bearer <jwt_token>
 
 ## Lambda Functions Summary
 
-| Lambda Function | Endpoint | Method | Auth |
-|-----------------|----------|--------|------|
-| CMS-Users-AddAvatar | /admin/users/profile/avatar | POST | JWT |
-| CMS-Users-DeleteAvatar | /admin/users/profile/avatar/{avatarId} | DELETE | JWT |
-| CMS-Users-SetActiveAvatar | /admin/users/profile/avatar/active | PUT | JWT |
-| CMS-Users-GetUserAvatar | /admin/users/{userId}/avatar | GET | Public |
-| CMS-Users-GetProfile | /admin/users/profile | GET | JWT |
-| CMS-Users-UpdateEmail | /admin/users/profile/email | PUT | JWT |
-| CMS-Users-DeleteEmail | /admin/users/profile/email | DELETE | JWT |
-| CMS-Users-UpdatePassword | /admin/users/profile/password | PUT | JWT |
+| Lambda Function           | Endpoint                                 | Method | Auth   |
+|---------------------------|------------------------------------------|--------|--------|
+| CMS-Users-AddAvatar       | /admin/users/profile/avatar              | POST   | JWT    |
+| CMS-Users-DeleteAvatar    | /admin/users/profile/avatar/{avatarId}   | DELETE | JWT    |
+| CMS-Users-SetActiveAvatar | /admin/users/profile/avatar/active       | PUT    | JWT    |
+| CMS-Users-GetUserAvatar   | /admin/users/{userId}/avatars/{avatarId} | GET    | Public |
+| CMS-Users-GetProfile      | /admin/users/profile                     | GET    | JWT    |
+| CMS-Users-UpdateEmail     | /admin/users/profile/email               | PUT    | JWT    |
+| CMS-Users-DeleteEmail     | /admin/users/profile/email               | DELETE | JWT    |
+| CMS-Users-UpdatePassword  | /admin/users/profile/password            | PUT    | JWT    |

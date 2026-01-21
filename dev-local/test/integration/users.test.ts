@@ -629,26 +629,63 @@ describe("Users", () => {
   });
 
   describe("UsersGetUserAvatar", () => {
-    test("returns user avatars (public endpoint, no auth)", async () => {
-      const event = buildEvent({
-        method: "GET",
-        pathParameters: {
-          userId: userTestUser.userId,
-        },
-      });
+    test("returns specific avatar by avatarId (public endpoint, no auth)", async () => {
+      // Create a fresh user with an avatar
+      const testUser = {
+        userId: `get-avatar-test-${uniqueId("user")}`,
+        username: `getavataruser-${uniqueId("user")}`,
+        role: "user",
+      };
+      const avatarId = `${Date.now()}`;
 
-      const response = await getUserAvatarHandler(event);
+      await docClient.send(
+        new PutCommand({
+          TableName: TABLES.USERS,
+          Item: {
+            userId: testUser.userId,
+            username: testUser.username,
+            passwordHash: "not-used",
+            role: testUser.role,
+            createdAt: Date.now(),
+            avatars: [{ avatarId, dataUrl: VALID_AVATAR_DATA_URL, uploadedAt: Date.now() }],
+            activeAvatarId: avatarId,
+          },
+        }),
+      );
 
-      expect(response.statusCode).toBe(200);
+      try {
+        // Fetch the avatar by ID (public endpoint)
+        const event = buildEvent({
+          method: "GET",
+          pathParameters: {
+            userId: testUser.userId,
+            avatarId: avatarId,
+          },
+        });
 
-      const body = parseBody<{
-        userId: string;
-        username: string;
-        avatarDataUrl: string | null;
-      }>(response);
+        const response = await getUserAvatarHandler(event);
 
-      expect(body.userId).toBe(userTestUser.userId);
-      expect(body.username).toBe(userTestUser.username);
+        expect(response.statusCode).toBe(200);
+
+        const body = parseBody<{
+          userId: string;
+          username: string;
+          avatarId: string;
+          avatarDataUrl: string;
+        }>(response);
+
+        expect(body.userId).toBe(testUser.userId);
+        expect(body.username).toBe(testUser.username);
+        expect(body.avatarId).toBe(avatarId);
+        expect(body.avatarDataUrl).toBeTruthy();
+      } finally {
+        await docClient.send(
+          new DeleteCommand({
+            TableName: TABLES.USERS,
+            Key: { userId: testUser.userId },
+          }),
+        );
+      }
     });
 
     test("returns 404 for non-existent user", async () => {
@@ -656,6 +693,7 @@ describe("Users", () => {
         method: "GET",
         pathParameters: {
           userId: "non-existent-user-id",
+          avatarId: "some-avatar-id",
         },
       });
 
@@ -664,56 +702,20 @@ describe("Users", () => {
       expect(response.statusCode).toBe(404);
     });
 
-    test("returns null avatarDataUrl for user with no avatars", async () => {
-      // Create user without avatars
-      const noAvatarUser = {
-        userId: `no-avatar-${uniqueId("user")}`,
-        username: `noavataruser-${uniqueId("user")}`,
-        role: "user",
-      };
+    test("returns 404 for non-existent avatar", async () => {
+      const event = buildEvent({
+        method: "GET",
+        pathParameters: {
+          userId: userTestUser.userId,
+          avatarId: "non-existent-avatar-id",
+        },
+      });
 
-      await docClient.send(
-        new PutCommand({
-          TableName: TABLES.USERS,
-          Item: {
-            userId: noAvatarUser.userId,
-            username: noAvatarUser.username,
-            passwordHash: "not-used",
-            role: noAvatarUser.role,
-            createdAt: Date.now(),
-            // No avatars field
-          },
-        }),
-      );
+      const response = await getUserAvatarHandler(event);
 
-      try {
-        const event = buildEvent({
-          method: "GET",
-          pathParameters: {
-            userId: noAvatarUser.userId,
-          },
-        });
-
-        const response = await getUserAvatarHandler(event);
-
-        expect(response.statusCode).toBe(200);
-        const body = parseBody<{
-          userId: string;
-          username: string;
-          avatarDataUrl: string | null;
-        }>(response);
-
-        expect(body.userId).toBe(noAvatarUser.userId);
-        expect(body.avatarDataUrl).toBeNull();
-      } finally {
-        // Cleanup
-        await docClient.send(
-          new DeleteCommand({
-            TableName: TABLES.USERS,
-            Key: { userId: noAvatarUser.userId },
-          }),
-        );
-      }
+      expect(response.statusCode).toBe(404);
+      const body = parseBody<{ error: string }>(response);
+      expect(body.error).toBe("Avatar not found");
     });
   });
 
