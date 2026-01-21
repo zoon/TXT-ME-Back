@@ -44,12 +44,13 @@ exports.handler = async (event) => {
     
     const user = result.Item;
     const avatars = user.avatars || [];
-    const fallbackAvatarId = requestedAvatarId || user.activeAvatarId;
-    const avatar = fallbackAvatarId ? avatars.find(a => a.avatarId === fallbackAvatarId) : null;
+    const isActiveRequest = requestedAvatarId === 'active';
+    const targetAvatarId = isActiveRequest ? user.activeAvatarId : requestedAvatarId;
+    const avatar = targetAvatarId ? avatars.find(a => a.avatarId === targetAvatarId) : null;
 
     console.log('User found:', user.username, 'avatars:', avatars.length);
 
-    if (!avatar && requestedAvatarId) {
+    if (!avatar) {
       return {
         statusCode: 404,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -57,15 +58,21 @@ exports.handler = async (event) => {
       };
     }
 
+    // Endpoint 4 (specific avatarId): { userId, username, avatarDataUrl }
+    // Endpoint 5 (active): { userId, username, avatarId, avatarDataUrl }
+    const response = {
+      userId: user.userId,
+      username: user.username,
+      avatarDataUrl: avatar.dataUrl
+    };
+    if (isActiveRequest) {
+      response.avatarId = avatar.avatarId;
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        userId: user.userId,
-        username: user.username,
-        avatarId: avatar ? avatar.avatarId : null,
-        avatarDataUrl: avatar ? avatar.dataUrl : null
-      })
+      body: JSON.stringify(response)
     };
   } catch (error) {
     console.error('Error:', error);
