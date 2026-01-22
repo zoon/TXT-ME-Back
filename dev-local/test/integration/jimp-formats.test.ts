@@ -15,7 +15,7 @@ async function getSupportMap(buffer: Buffer) {
 
   for (const mime of OUTPUT_MIMES) {
     try {
-      await image.getBuffer(mime);
+      await image.getBuffer(mime as "image/jpeg");
       support[mime] = true;
     } catch {
       support[mime] = false;

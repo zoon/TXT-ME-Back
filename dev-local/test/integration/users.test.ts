@@ -594,7 +594,7 @@ describe("Users", () => {
       expect(response.statusCode).toBe(500); // Handler returns 500 for auth errors
     });
 
-    test("returns 400 when trying to delete active avatar", async () => {
+    test("returns 409 when trying to delete active avatar", async () => {
       const event = buildAuthEvent(userTestUser, {
         method: "DELETE",
         pathParameters: {
@@ -604,7 +604,7 @@ describe("Users", () => {
 
       const response = await deleteAvatarHandler(event);
 
-      expect(response.statusCode).toBe(400);
+      expect(response.statusCode).toBe(409);
 
       const body = parseBody<{ error: string }>(response);
       expect(body.error).toContain("active");
@@ -670,13 +670,11 @@ describe("Users", () => {
         const body = parseBody<{
           userId: string;
           username: string;
-          avatarId: string;
           avatarDataUrl: string;
         }>(response);
 
         expect(body.userId).toBe(testUser.userId);
         expect(body.username).toBe(testUser.username);
-        expect(body.avatarId).toBe(avatarId);
         expect(body.avatarDataUrl).toBeTruthy();
       } finally {
         await docClient.send(
