@@ -1,0 +1,823 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "TXT-ME.CLUB CMS API",
+    "description": "REST API for collaborative content management platform. Supports posts, comments, user management, and notifications.",
+    "version": "2.0.0",
+    "contact": {
+      "email": "yana.listyeva@gmail.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.txt-me.club/prod",
+      "description": "Production server (via Cloudflare)"
+    },
+    {
+      "url": "https://326ltbm205.execute-api.eu-north-1.amazonaws.com/prod",
+      "description": "Direct AWS API Gateway"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "User registration and login"
+    },
+    {
+      "name": "Posts",
+      "description": "Post CRUD operations"
+    },
+    {
+      "name": "Comments",
+      "description": "Comment operations on posts"
+    },
+    {
+      "name": "User Profile",
+      "description": "User profile management"
+    },
+    {
+      "name": "Admin",
+      "description": "Administrative operations"
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Register new user",
+        "description": "Creates new user account with bcrypt password hashing",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 50,
+                    "pattern": "^[a-zA-Z0-9_-]+$"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "409": {
+            "description": "Username already exists"
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Login user",
+        "description": "Authenticates user and returns JWT token (HS256, 24h TTL)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": {"type": "string"},
+                  "password": {"type": "string"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        }
+      }
+    },
+    "/posts": {
+      "get": {
+        "tags": ["Posts"],
+        "summary": "List posts",
+        "description": "Get paginated list of posts with optional filtering by tags and author",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "default": 20, "maximum": 100}
+          },
+          {
+            "name": "lastKey",
+            "in": "query",
+            "description": "Pagination cursor from previous response",
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "tagId",
+            "in": "query",
+            "description": "Filter by tag",
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "author",
+            "in": "query",
+            "description": "Filter by author username",
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of posts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "posts": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/Post"}
+                    },
+                    "lastKey": {
+                      "type": "string",
+                      "description": "Cursor for next page"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Posts"],
+        "summary": "Create post",
+        "description": "Create new post with Markdown content (GFM supported)",
+        "security": [{"BearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Post created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/posts/recent": {
+      "get": {
+        "tags": ["Posts"],
+        "summary": "Get recent posts",
+        "description": "Get most recent posts (last 10)",
+        "responses": {
+          "200": {
+            "description": "Recent posts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {"$ref": "#/components/schemas/Post"}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/posts/{id}": {
+      "get": {
+        "tags": ["Posts"],
+        "summary": "Get post by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string", "format": "uuid"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Post details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Post not found"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Posts"],
+        "summary": "Update post",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string", "format": "uuid"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Post updated"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Not authorized to edit this post"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Posts"],
+        "summary": "Delete post",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string", "format": "uuid"}
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Post deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Not authorized to delete this post"
+          }
+        }
+      }
+    },
+    "/posts/{id}/comments": {
+      "get": {
+        "tags": ["Comments"],
+        "summary": "List comments for post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string", "format": "uuid"}
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "default": 50}
+          },
+          {
+            "name": "lastKey",
+            "in": "query",
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of comments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "comments": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/Comment"}
+                    },
+                    "lastKey": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Comments"],
+        "summary": "Create comment",
+        "description": "Create comment or reply to another comment. Triggers email notifications.",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string", "format": "uuid"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Comment created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Comment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/posts/{id}/comments/{commentId}": {
+      "put": {
+        "tags": ["Comments"],
+        "summary": "Update comment",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "schema": {"type": "string"}},
+          {"name": "commentId", "in": "path", "required": true, "schema": {"type": "string"}}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {"type": "string"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Comment updated"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"description": "Not authorized to edit this comment"}
+        }
+      },
+      "delete": {
+        "tags": ["Comments"],
+        "summary": "Delete comment",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "schema": {"type": "string"}},
+          {"name": "commentId", "in": "path", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "204": {"description": "Comment deleted"},
+          "401": {"$ref": "#/components/responses/Unauthorized"}
+        }
+      }
+    },
+    "/admin/users/profile": {
+      "get": {
+        "tags": ["User Profile"],
+        "summary": "Get current user profile",
+        "security": [{"BearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "User profile",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/UserProfile"}
+              }
+            }
+          },
+          "401": {"$ref": "#/components/responses/Unauthorized"}
+        }
+      }
+    },
+    "/admin/users/profile/email": {
+      "put": {
+        "tags": ["User Profile"],
+        "summary": "Update email",
+        "security": [{"BearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {"type": "string", "format": "email"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Email updated"},
+          "401": {"$ref": "#/components/responses/Unauthorized"}
+        }
+      },
+      "delete": {
+        "tags": ["User Profile"],
+        "summary": "Remove email",
+        "security": [{"BearerAuth": []}],
+        "responses": {
+          "204": {"description": "Email removed"},
+          "401": {"$ref": "#/components/responses/Unauthorized"}
+        }
+      }
+    },
+    "/admin/users/profile/password": {
+      "put": {
+        "tags": ["User Profile"],
+        "summary": "Change password",
+        "security": [{"BearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["oldPassword", "newPassword"],
+                "properties": {
+                  "oldPassword": {"type": "string"},
+                  "newPassword": {"type": "string", "minLength": 8}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Password changed"},
+          "401": {"$ref": "#/components/responses/Unauthorized"}
+        }
+      }
+    },
+    "/admin/users/profile/avatar": {
+      "post": {
+        "tags": ["User Profile"],
+        "summary": "Upload avatar",
+        "description": "Upload avatar as base64 data URL. Max 10KB, resized to 50x50px JPEG.",
+        "security": [{"BearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dataUrl": {
+                    "type": "string",
+                    "description": "Base64 data URL (data:image/jpeg;base64,...)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {"description": "Avatar uploaded"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "400": {"description": "Invalid image or size exceeds 10KB"}
+        }
+      }
+    },
+    "/admin/users/profile/avatar/{avatarId}": {
+      "delete": {
+        "tags": ["User Profile"],
+        "summary": "Delete avatar",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {"name": "avatarId", "in": "path", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "204": {"description": "Avatar deleted"},
+          "401": {"$ref": "#/components/responses/Unauthorized"}
+        }
+      }
+    },
+    "/admin/users/profile/avatar/active": {
+      "put": {
+        "tags": ["User Profile"],
+        "summary": "Set active avatar",
+        "security": [{"BearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "avatarId": {"type": "string"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Active avatar set"},
+          "401": {"$ref": "#/components/responses/Unauthorized"}
+        }
+      }
+    },
+    "/admin/users/{userId}/avatar": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get user avatar by userId",
+        "parameters": [
+          {"name": "userId", "in": "path", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "User avatar data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "avatarId": {"type": "string"},
+                    "dataUrl": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List all users",
+        "description": "Admin endpoint to list all users",
+        "security": [{"BearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "List of users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {"$ref": "#/components/schemas/UserProfile"}
+                }
+              }
+            }
+          },
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"description": "Admin role required"}
+        }
+      }
+    },
+    "/admin/users/{userId}": {
+      "put": {
+        "tags": ["Admin"],
+        "summary": "Update user role",
+        "description": "Admin endpoint to change user roles (KOMMENTATOR, AVTOR, SMOTRITEL, NASTOIATEL)",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {"name": "userId", "in": "path", "required": true, "schema": {"type": "string"}}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": ["KOMMENTATOR", "AVTOR", "SMOTRITEL", "NASTOIATEL"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "User role updated"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"description": "Admin role required"}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token from /auth/login or /auth/register (HS256, 24h TTL)"
+      }
+    },
+    "schemas": {
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "token": {"type": "string"},
+          "userId": {"type": "string", "format": "uuid"},
+          "username": {"type": "string"},
+          "role": {"type": "string"}
+        }
+      },
+      "Post": {
+        "type": "object",
+        "properties": {
+          "postId": {"type": "string", "format": "uuid"},
+          "title": {"type": "string"},
+          "content": {"type": "string", "description": "Markdown (GFM)"},
+          "username": {"type": "string"},
+          "userId": {"type": "string"},
+          "tags": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {"type": "string", "enum": ["video", "audio", "image"]},
+                "url": {"type": "string"},
+                "addedAt": {"type": "integer"}
+              }
+            }
+          },
+          "commentCount": {"type": "integer"},
+          "createdAt": {"type": "integer"},
+          "updatedAt": {"type": "integer"}
+        }
+      },
+      "PostCreate": {
+        "type": "object",
+        "required": ["title", "content"],
+        "properties": {
+          "title": {"type": "string"},
+          "content": {"type": "string"},
+          "tags": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {"type": "string"},
+                "url": {"type": "string"}
+              }
+            }
+          }
+        }
+      },
+      "PostUpdate": {
+        "type": "object",
+        "properties": {
+          "title": {"type": "string"},
+          "content": {"type": "string"},
+          "tags": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      },
+      "Comment": {
+        "type": "object",
+        "properties": {
+          "commentId": {"type": "string", "format": "uuid"},
+          "postId": {"type": "string", "format": "uuid"},
+          "parentId": {"type": "string", "format": "uuid", "nullable": true},
+          "content": {"type": "string"},
+          "username": {"type": "string"},
+          "userId": {"type": "string"},
+          "commentAvatarId": {"type": "string"},
+          "mentions": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "replies": {"type": "integer"},
+          "createdAt": {"type": "integer"},
+          "updatedAt": {"type": "integer"}
+        }
+      },
+      "CommentCreate": {
+        "type": "object",
+        "required": ["content"],
+        "properties": {
+          "content": {"type": "string"},
+          "parentId": {"type": "string", "nullable": true, "description": "Parent comment ID for replies"}
+        }
+      },
+      "UserProfile": {
+        "type": "object",
+        "properties": {
+          "userId": {"type": "string", "format": "uuid"},
+          "username": {"type": "string"},
+          "email": {"type": "string", "format": "email", "nullable": true},
+          "role": {
+            "type": "string",
+            "enum": ["KOMMENTATOR", "AVTOR", "SMOTRITEL", "NASTOIATEL"]
+          },
+          "activeAvatarId": {"type": "string", "nullable": true},
+          "avatars": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "object",
+              "properties": {
+                "avatarId": {"type": "string"},
+                "dataUrl": {"type": "string"},
+                "uploadedAt": {"type": "integer"}
+              }
+            }
+          },
+          "createdAt": {"type": "integer"},
+          "updatedAt": {"type": "string", "format": "date-time"}
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Missing or invalid JWT token"
+      },
+      "BadRequest": {
+        "description": "Invalid request parameters"
+      }
+    }
+  }
+}
